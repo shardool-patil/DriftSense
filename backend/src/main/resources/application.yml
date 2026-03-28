@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: driftsense-orchestrator
+
+  datasource:
+    # Appending the options parameter to force UTC timezone and bypass the OS mismatch
+    url: jdbc:postgresql://localhost:5432/driftsense_db?options=-c%20timezone=UTC
+    username: driftsense_admin
+    password: super_secret_password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      "[hibernate.format_sql]": true
+
+server:
+  port: 8080
