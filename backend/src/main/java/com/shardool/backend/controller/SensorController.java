@@ -9,6 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sensors")
+@CrossOrigin(origins = "http://localhost:5173")
 public class SensorController {
 
     private final OrchestratorService orchestratorService;
@@ -22,7 +23,6 @@ public class SensorController {
         Double temp = payload.get("temperature");
         Double vib = payload.get("vibration");
         
-        // Pass the raw data to the orchestrator to get predictions and save
         SensorLog savedLog = orchestratorService.processAndSaveSensorData(temp, vib);
         
         return ResponseEntity.ok(savedLog);
