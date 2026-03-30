@@ -1,49 +1,57 @@
 services:
-  # ----------------------------------------
-  # Database: PostgreSQL
-  # ----------------------------------------
-  postgres:
+  # 1. The Database
+  db:
     image: postgres:15
-    container_name: driftsense_db
-    restart: always
+    container_name: driftsense-postgres
     environment:
-      POSTGRES_USER: driftsense_admin
-      POSTGRES_PASSWORD: super_secret_password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: driftsense_db
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    networks:
-      - driftsense_network
+      - postgres_data:/var/lib/postgresql/data
 
-  # ----------------------------------------
-  # MLOps: MLflow Tracking Server
-  # ----------------------------------------
+  # 2. The Model Registry
   mlflow:
-    image: ghcr.io/mlflow/mlflow:latest
-    container_name: driftsense_mlflow
-    restart: always
+    image: ghcr.io/mlflow/mlflow:v2.11.3
+    container_name: driftsense-mlflow
     ports:
       - "5000:5000"
-    environment:
-      - AWS_ACCESS_KEY_ID=minioadmin      # Placeholder for future S3/MinIO setup
-      - AWS_SECRET_ACCESS_KEY=minioadmin
-    # We use sh -c to install the postgres adapter right before starting the server
+    # We added a quick pip install right before booting the server
     command: >
-      sh -c "pip install psycopg2-binary &&
+      sh -c "pip install psycopg2-binary && 
       mlflow server 
-      --backend-store-uri postgresql://driftsense_admin:super_secret_password@postgres:5432/driftsense_db 
-      --default-artifact-root /mlflow/artifacts 
+      --backend-store-uri postgresql://postgres:password@db:5432/driftsense_db 
+      --default-artifact-root /mlruns 
       --host 0.0.0.0"
     depends_on:
-      - postgres
-    volumes:
-      - ./mlflow_data:/mlflow/artifacts
-    networks:
-      - driftsense_network
+      - db
 
-# Define the custom network so containers can resolve each other by name (e.g., 'postgres')
-networks:
-  driftsense_network:
-    driver: bridge
+  # 3. The Python Inference Engine
+  inference:
+    build: ./inference
+    container_name: driftsense-inference
+    ports:
+      - "8000:8000"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      - mlflow
+
+  # 4. The Java Spring Boot Orchestrator
+  backend:
+    build: ./backend
+    container_name: driftsense-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/driftsense_db
+      - SPRING_DATASOURCE_USERNAME=postgres   # <-- ADD THIS
+      - SPRING_DATASOURCE_PASSWORD=password   # <-- ADD THIS
+    depends_on:
+      - db
+      - inference
+
+volumes:
+  postgres_data:

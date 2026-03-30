@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 import mlflow
 import mlflow.sklearn
 from sklearn.ensemble import RandomForestClassifier
@@ -7,11 +8,16 @@ import numpy as np
 app = FastAPI(title="DriftSense Inference API")
 
 # Connect to the MLflow Docker Container
-mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_tracking_uri("http://mlflow:5000")
 mlflow.set_experiment("DriftSense_Sprint1")
 
 # Global variable to hold our model
 model = None
+
+# 1. We create a Pydantic model to define the expected JSON body structure
+class SensorData(BaseModel):
+    temperature: float
+    vibration: float
 
 @app.on_event("startup")
 def train_dummy_model():
@@ -39,21 +45,22 @@ def train_dummy_model():
         
         print("Model successfully trained and logged to MLflow!")
 
+# 2. We update the endpoint to expect the Pydantic model (JSON Body)
 @app.post("/predict")
-def predict(temperature: float, vibration: float):
+def predict(data: SensorData):
     """
     Takes live sensor data and returns a prediction using the trained model.
     """
     if model is None:
         return {"error": "Model not trained yet"}
     
-    # Run the prediction
-    prediction = model.predict([[temperature, vibration]])
+    # 3. Access the data using dot notation (data.temperature)
+    prediction = model.predict([[data.temperature, data.vibration]])
     status = "Warning/Failure" if prediction[0] == 1 else "Healthy"
     
     return {
-        "sensor_temperature": temperature,
-        "sensor_vibration": vibration,
+        "sensor_temperature": data.temperature,
+        "sensor_vibration": data.vibration,
         "prediction_class": int(prediction[0]),
         "system_status": status
     }

@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/sensors")
-@CrossOrigin(origins = "http://localhost:5173")
 public class SensorController {
 
     private final OrchestratorService orchestratorService;

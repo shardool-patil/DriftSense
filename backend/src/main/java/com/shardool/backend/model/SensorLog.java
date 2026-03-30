@@ -11,50 +11,62 @@ public class SensorLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "recorded_at", nullable = false, updatable = false)
+    private Double temperature;
+    private Double vibration;
+    private Integer predictionClass;
+    private String systemStatus;
     private LocalDateTime recordedAt;
 
-    @Column(nullable = false)
-    private Double temperature;
-
-    @Column(nullable = false)
-    private Double vibration;
-
-    @Column(name = "prediction_class", nullable = false)
-    private Integer predictionClass;
-
-    @Column(name = "system_status", nullable = false)
-    private String systemStatus;
-
-    // This tells Hibernate to automatically set the current time right before saving to the DB
-    @PrePersist
-    protected void onCreate() {
-        this.recordedAt = LocalDateTime.now();
+    // Constructors
+    public SensorLog() {
     }
 
-    // --- Constructors ---
-    public SensorLog() {}
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
 
-    public SensorLog(Double temperature, Double vibration, Integer predictionClass, String systemStatus) {
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Double getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(Double temperature) {
         this.temperature = temperature;
+    }
+
+    public Double getVibration() {
+        return vibration;
+    }
+
+    public void setVibration(Double vibration) {
         this.vibration = vibration;
+    }
+
+    public Integer getPredictionClass() {
+        return predictionClass;
+    }
+
+    public void setPredictionClass(Integer predictionClass) {
         this.predictionClass = predictionClass;
+    }
+
+    public String getSystemStatus() {
+        return systemStatus;
+    }
+
+    public void setSystemStatus(String systemStatus) {
         this.systemStatus = systemStatus;
     }
 
-    // --- Getters and Setters ---
-    public Long getId() { return id; }
-    public LocalDateTime getRecordedAt() { return recordedAt; }
-    
-    public Double getTemperature() { return temperature; }
-    public void setTemperature(Double temperature) { this.temperature = temperature; }
+    public LocalDateTime getRecordedAt() {
+        return recordedAt;
+    }
 
-    public Double getVibration() { return vibration; }
-    public void setVibration(Double vibration) { this.vibration = vibration; }
-
-    public Integer getPredictionClass() { return predictionClass; }
-    public void setPredictionClass(Integer predictionClass) { this.predictionClass = predictionClass; }
-
-    public String getSystemStatus() { return systemStatus; }
-    public void setSystemStatus(String systemStatus) { this.systemStatus = systemStatus; }
+    public void setRecordedAt(LocalDateTime recordedAt) {
+        this.recordedAt = recordedAt;
+    }
 }
