@@ -4,6 +4,7 @@ import mlflow
 import mlflow.sklearn
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+import shap
 
 app = FastAPI(title="DriftSense Inference API")
 
@@ -55,14 +56,47 @@ def predict(data: SensorData):
         return {"error": "Model not trained yet"}
     
     # 3. Access the data using dot notation (data.temperature)
-    prediction = model.predict([[data.temperature, data.vibration]])
+    instance = np.array([[data.temperature, data.vibration]])
+    prediction = model.predict(instance)
     status = "Warning/Failure" if prediction[0] == 1 else "Healthy"
     
+    # --- Explainable AI (XAI) Engine ---
+    # Calculate SHAP values to explain the specific prediction
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(instance)
+    
+    # Extract the impact on the positive class (Failure = index 1)
+    if isinstance(shap_values, list):
+        class_1_shap = shap_values[1][0]
+    elif len(np.array(shap_values).shape) == 3:
+        # If SHAP returns a 3D array: (n_samples, n_features, n_classes)
+        class_1_shap = shap_values[0, :, 1]
+    else:
+        class_1_shap = shap_values[0]
+
+    # Force the values into a flattened 1D array to avoid multi-dimensional indexing issues
+    class_1_shap = np.array(class_1_shap).flatten()
+
+    # Calculate percentage contributions based on absolute impact
+    abs_shap = np.abs(class_1_shap)
+    total_shap = float(np.sum(abs_shap))
+    
+    if total_shap == 0:
+        temp_impact, vib_impact = 50.0, 50.0
+    else:
+        # Wrap the math in float() so Python's built-in round() works correctly
+        temp_impact = round(float((abs_shap[0] / total_shap) * 100), 2)
+        vib_impact = round(float((abs_shap[1] / total_shap) * 100), 2)
+
     return {
         "sensor_temperature": data.temperature,
         "sensor_vibration": data.vibration,
         "prediction_class": int(prediction[0]),
-        "system_status": status
+        "system_status": status,
+        "explanation": {
+            "temperature_impact": temp_impact,
+            "vibration_impact": vib_impact
+        }
     }
 
 @app.post("/retrain")
