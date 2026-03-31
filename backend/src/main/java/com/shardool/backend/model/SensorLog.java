@@ -17,6 +17,10 @@ public class SensorLog {
     private String systemStatus;
     private LocalDateTime recordedAt;
 
+    // The new embedded object to hold the XAI data
+    @Embedded
+    private Explanation explanation;
+
     // Constructors
     public SensorLog() {
     }
@@ -68,5 +72,38 @@ public class SensorLog {
 
     public void setRecordedAt(LocalDateTime recordedAt) {
         this.recordedAt = recordedAt;
+    }
+
+    public Explanation getExplanation() {
+        return explanation;
+    }
+
+    public void setExplanation(Explanation explanation) {
+        this.explanation = explanation;
+    }
+
+    // Static inner class for the embedded JSON structure
+    @Embeddable
+    public static class Explanation {
+        private Double temperatureImpact;
+        private Double vibrationImpact;
+
+        public Explanation() {}
+
+        public Double getTemperatureImpact() {
+            return temperatureImpact;
+        }
+
+        public void setTemperatureImpact(Double temperatureImpact) {
+            this.temperatureImpact = temperatureImpact;
+        }
+
+        public Double getVibrationImpact() {
+            return vibrationImpact;
+        }
+
+        public void setVibrationImpact(Double vibrationImpact) {
+            this.vibrationImpact = vibrationImpact;
+        }
     }
 }

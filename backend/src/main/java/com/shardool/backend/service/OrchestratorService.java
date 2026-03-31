@@ -27,6 +27,8 @@ public class OrchestratorService {
         requestPayload.put("temperature", temperature);
         requestPayload.put("vibration", vibration);
 
+        // Standard Map is used here to catch arbitrary JSON fields from Python
+        @SuppressWarnings("unchecked")
         Map<String, Object> mlResponse = restTemplate.postForObject(ML_API_URL, requestPayload, Map.class);
 
         Integer predictionClass = (Integer) mlResponse.get("prediction_class");
@@ -38,6 +40,23 @@ public class OrchestratorService {
         log.setPredictionClass(predictionClass);
         log.setSystemStatus(systemStatus);
         log.setRecordedAt(LocalDateTime.now());
+
+        // --- XAI Extraction ---
+        @SuppressWarnings("unchecked")
+        Map<String, Object> explanationData = (Map<String, Object>) mlResponse.get("explanation");
+        
+        if (explanationData != null) {
+            SensorLog.Explanation explanation = new SensorLog.Explanation();
+            
+            // Cast to Number first to safely handle both Integer (e.g., 50) and Double (e.g., 50.5) gracefully
+            Number tempImpact = (Number) explanationData.get("temperature_impact");
+            Number vibImpact = (Number) explanationData.get("vibration_impact");
+            
+            if (tempImpact != null) explanation.setTemperatureImpact(tempImpact.doubleValue());
+            if (vibImpact != null) explanation.setVibrationImpact(vibImpact.doubleValue());
+            
+            log.setExplanation(explanation);
+        }
 
         return repository.save(log);
     }
